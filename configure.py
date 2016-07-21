@@ -101,7 +101,7 @@ class Configuration(MutableMapping):
         return self[name]
 
     def _merge(self, config):
-        for k, v in config.items():
+        for k, v in list(config.items()):
             if isinstance(v, Mapping) and k in self:
                 if not isinstance(self[k], Mapping):
                     raise ConfigurationError(
@@ -163,7 +163,7 @@ class Configuration(MutableMapping):
                 self.__struct = self.__struct(
                     Configuration.from_dict({}, pwd=self._pwd))
 
-        for k, v in self.iteritems():
+        for k, v in self.items():
             self[k] = _impl(v)
 
         return self
@@ -241,11 +241,11 @@ class Configuration(MutableMapping):
             mcs.update(multi_constructors)
 
         if cs:
-            for name, constructor in cs.items():
+            for name, constructor in list(cs.items()):
                 loader.add_constructor(name, constructor)
 
         if mcs:
-            for name, constructor in mcs.items():
+            for name, constructor in list(mcs.items()):
                 loader.add_multi_constructor(name, constructor)
 
         try:
@@ -281,7 +281,7 @@ class Configuration(MutableMapping):
 def _timedelta_contructor(loader, node):
     item = loader.construct_scalar(node)
 
-    if not isinstance(item, basestring) or not item:
+    if not isinstance(item, str) or not item:
         raise ConfigurationError(
             "value '%s' cannot be interpreted as date range" % item)
     num, typ = item[:-1], item[-1].lower()
@@ -310,7 +310,7 @@ def _timedelta_contructor(loader, node):
 def _bytesize_constructor(loader, node):
     item = loader.construct_scalar(node)
 
-    if not isinstance(item, basestring) or not item:
+    if not isinstance(item, str) or not item:
         raise ConfigurationError(
             "value '%s' cannot be interpreted as byte size" % item)
 
@@ -353,7 +353,7 @@ def _bytesize_constructor(loader, node):
 def _re_constructor(loader, node):
     item = loader.construct_scalar(node)
 
-    if not isinstance(item, basestring) or not item:
+    if not isinstance(item, str) or not item:
         raise ConfigurationError(
             "value '%s' cannot be interpreted as regular expression" % item)
 
@@ -402,7 +402,7 @@ class Factory(Directive):
     def __call__(self, ctx):
         config = dict(self.config)
         factory = self.factory
-        if isinstance(factory, basestring):
+        if isinstance(factory, str):
             try:
                 factory = import_string(factory)
             except ImportStringError as e:
@@ -435,7 +435,7 @@ class Factory(Directive):
                 kwargs[a] = arg
 
         if argspec.keywords:
-            for k in config.keys():
+            for k in list(config.keys()):
                 arg = config.pop(k)
                 if isinstance(arg, Directive):
                     arg = arg(ctx)
@@ -539,7 +539,7 @@ def import_string(import_name, silent=False):
     :copyright: (c) 2011 by the Werkzeug Team
     """
     # force the import name to automatically convert to strings
-    if isinstance(import_name, unicode):
+    if isinstance(import_name, str):
         import_name = str(import_name)
     try:
         if ':' in import_name:
@@ -550,7 +550,7 @@ def import_string(import_name, silent=False):
             return __import__(import_name)
         # __import__ is not able to handle unicode strings in the fromlist
         # if the module is a package
-        if isinstance(obj, unicode):
+        if isinstance(obj, str):
             obj = obj.encode('utf-8')
         try:
             return getattr(__import__(module, None, None, [obj]), obj)
@@ -560,9 +560,9 @@ def import_string(import_name, silent=False):
             modname = module + '.' + obj
             __import__(modname)
             return sys.modules[modname]
-    except ImportError, e:
+    except ImportError as e:
         if not silent:
-            raise ImportStringError(import_name, e), None, sys.exc_info()[2]
+            raise ImportStringError(import_name, e).with_traceback(sys.exc_info()[2])
 
 class ImportStringError(ImportError):
     """Provides information about a failed :func:`import_string` attempt.
@@ -621,7 +621,7 @@ def format_config(config, _lvl=0):
     return buf
 
 def print_config(config):
-    print format_config(config)
+    print(format_config(config))
 
 def obj_by_ref(o, path):
     for s in path.split("."):
